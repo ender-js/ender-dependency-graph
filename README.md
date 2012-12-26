@@ -1,49 +1,73 @@
-#Ender 1.0 - work in progress - developer notes
+# Ender Dependency Graph [![Build Status](https://secure.travis-ci.org/ender-js/ender-dependency-graph.png)](http://travis-ci.org/ender-js/ender-dependency-graph)
 
-Architecture notes can be found in *lib/README.md*.
+A component of the [Ender CLI](https://github.com/ender-js/Ender/), used to build a dependency graph of installed packages given a list of parent packages.
 
-This branch won't be deployed to npm until it's ready for a 1.0 release. Use `npm link` to install your local repo as the global *ender* package.
+Similar to the `npm ls` command, this package understands Ender-specific packages by using [ender-package-util](https://github.com/ender-js/ender-package-util/) to interpret the *package.json* files (which may contain Ender-specific overrides for some root keys).
 
-What does *ready* mean? We haven't quite pinned that down yet, but we'll get there!
+The `DependencyGraph` object returned by this package can be used to iterate over packages in the dependency graph. This is used for package-bundling in the Ender CLI.
 
-Use `npm install` to install both the dependencies and the devDependencies, otherwise you won't be able to run the executable (in *bin/ender*) or run the tests (using the Makefile).
+The *ender-js* package (or alternative client-lib, supplied with the `'client-lib'` option), where it exists in the list of packages, will be automatically shifted to the top of the dependency graph so it is always processed first.
 
-Unit tests can be invoked by running a `make` or `make unittests`. Functional tests take longer to run as they check out packages from npm and can be invoked by running a `make functionaltests`. All types of tests can be run with `make alltests`--**this must be done before any pull-request and must all pass**.
+## About Ender
 
-Tests use BusterJS, you can read more about it [here](http://busterjs.org/). Buster has integrated support for Sinon for mocking and stubbing, you can read more about it [here](http://sinonjs.org/). Note that Buster is still in Beta and may occasionally break. Bug @augustl or @cjno about that.
+For more information checkout [http://ender.jit.su](http://ender.jit.su)
 
-Feel free to open an issue on GitHub if you would like to discuss something or want support of some kind. Alternatively you can bug [@rvagg](http://twitter.com/rvagg) on Twitter or via [email](mailto:rod@vagg.org).
+## API
 
-## Some behavioural differences from 0.8.x
+### enderDependencyGraph(options, packages, callback)
+`enderDependencyGraph()` called as a function, will construct a `DependencyGraph` object for the given list of packages, working in the current working directory, and return it to via the `callback` function.
 
-This branch should do everything that the current 0.8.x branch does, with some additions:
+The `options` object may contain an optional `'client-lib'` key that will override the default `'ender-js'`. The client-lib will be automatically shifted to the begining of the graph so that it will always be processed first.
 
- * Some of the output to stdout will be different. Mostly minor wording changes but also the `ender info` output is included in each *build*, *add* and *remove*.
- * Packages are properly ordered (*!!*). Your *ender.js* will contain the packages you requested *in the order you requested them* on the commandline, with any dependencies placed *before* they are required.
- * *bin/ender* now gives proper exit-codes, if there is any kind of error you'll get a `1`, otherwise a `0`.
- * The `"ender"` key in *package.json* supports an array of files to concatenate to form the bridge.
- * A new `--client-lib` argument can be used to specify an alternative to the default *ender-js* package as a client lib. At the moment a client lib still needs to conform to the basics of the `$` + CommonJS pattern in order to support existing Ender packages.
+Each node in the graph takes the form:
 
-------------
+```js
+{
+    "packageJSON": {} // the package.json data, interpreted by ender-package-util
+  , "parents": [] // an array of parent names/paths, useful for locating the package on disk
+  , "dependencies": {} // any child-nodes of this node
+}
+```
 
-#ENDER [![Build Status](https://secure.travis-ci.org/ender-js/Ender.png)](http://travis-ci.org/ender-js/Ender)
+Any dependencies in the tree, including root packages, that are not found on disk, will be identified by replacing the node object with the sring: `'missing'`.
 
-**Ender is a full featured package manager for your browser.**<br/>
-It allows you to search, install, manage, and compile front-end javascript packages and their dependencies for the web. We like to think of it as [NPM](https://github.com/isaacs/npm)'s little sister.
+-------------------------
 
-**Ender is not a JavaScript library**.<br/>
-It's not a jQuery replacement. It's not even a static asset. It's a tool for making the consumption of front-end javascript packages dead simple and incredibly powerful.
+### enderDependencyGraph.getClientPackageName(options)
+`getClientPackageName()` is a simple utility to work out the client-lib from the given options. By default it is `'ender-js'` but the `'client-lib'` property in the `options` object may override this value.
 
-![Ender](http://f.cl.ly/items/1W0P3I3D3m3U0e1j2h1c/Screen%20shot%202011-05-09%20at%2011.31.42%20AM.png)
+-------------------------
 
-## WHY?
+### enderDependencyGraph.archyTree(packages, dependencyGraph, preparePretty)
+`archyTree()` will take a list of packages and a `DependencyGraph` object and return an archy-compatible tree out of the data. Each node takes the following structure:
 
-In the browser - **small, loosely coupled modules are the future and large, tightly-bound monolithic libraries are the past!**
+```js
+{
+    "label": "" // the name of the package
+  , "version": x.y.z // the semver for the packake
+  , "description": "" // the package description from package.json
+  , "nodes": [] // child nodes of this package
+}
+```
 
-Ender capitalizes on this by offering a unique way to bring together the exciting work happening in javascript packages and allows you to mix, match, and customize your own build, suited to your individual needs, without all the extra cruft that comes with larger libraries.
+archy only cares about the `'label'` and `'nodes'` properties, the rest are there to allow for non-archy output methods.
 
-With Ender, if one library goes bad or unmaintained, it can be replaced with another. Need a specific package version? No problem! Does your package have dependencies? Let us handle that for you too!
+By providing `true` for the third argument to `archyTree()`, `preparePretty`, you will receive back a string, already passed through archy, complete with versions, descriptions and colouring, ready for printing to stdout.
 
-## MORE INFO
+-------------------------
 
-For more information checkout [http://ender.no.de](http://ender.no.de)
+## Executable
+
+If you install with `npm install ender-dependency-graph -g` (why would you?) then you'll get an `ender-dependency-graph` executable that you can run with a list of packages. It will scan your node_modules directory, understand the Ender-specific dependency structure and pretty-print a tree for you.
+
+## Contributing
+
+Contributions are more than welcome! Just fork and submit a GitHub pull request! If you have changes that need to be synchronized across the various Ender CLI repositories then please make that clear in your pull requests.
+
+### Tests
+
+Ender Dependency Graph uses [Buster](http://busterjs.org) for unit testing. You'll get it (and a bazillion unnecessary dependencies) when you `npm install` in your cloned local repository. Simply run `npm test` to run the test suite.
+
+## Licence
+
+*Ender Dependency Graph* is Copyright (c) 2012 [@rvagg](https://github.com/rvagg), [@ded](https://github.com/ded), [@fat](https://github.com/fat) and other contributors. It is licenced under the MIT licence. All rights not explicitly granted in the MIT license are reserved. See the included LICENSE file for more details.
