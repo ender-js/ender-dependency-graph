@@ -10,7 +10,7 @@ The *ender-js* package (or alternative client-lib, supplied with the `'client-li
 
 ## About Ender
 
-For more information checkout [http://ender.jit.su](http://ender.jit.su)
+For more information check out [http://ender.jit.su](http://ender.jit.su)
 
 ## API
 
