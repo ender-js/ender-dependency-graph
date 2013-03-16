@@ -17,10 +17,12 @@
       , "colors"             : "~0.6.0"
     }
   , "devDependencies" : {
-        "buster"             : "~0.6.12"
+        "bustermove"         : "*"
+      , "tap"                : "*"
+      , "referee"            : "*"
     }
   , "scripts"         : {
-        "test"               : "./node_modules/.bin/buster-test"
+        "test"               : "tap test/*-test.js"
     }
   , "bin"             : {
         "ender-dependency-graph"

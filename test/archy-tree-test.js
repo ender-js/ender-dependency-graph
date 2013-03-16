@@ -23,12 +23,14 @@
  */
 
 
-var testCase  = require('buster').testCase
+var buster    = require('bustermove')
+  , assert    = require('referee').assert
+  , refute    = require('referee').refute
   , archyTree = require('../lib/archy-tree')
 
 // generates a tree that can be turned into nice output, not fully `archy`
 // compatible yet but can be easily transformed by the output routine
-testCase('archyTree', {
+buster.testCase('archyTree', {
     'test build': function () {
         var packagesArg       = { packages: 1 }
           , treeArg           = { tree: 1 }
