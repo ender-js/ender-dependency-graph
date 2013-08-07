@@ -38,8 +38,8 @@ Any dependencies in the tree, including root packages, that are not found on dis
 
 -------------------------
 
-### enderDependencyGraph.getClientPackageName(options)
-`getClientPackageName()` is a simple utility to work out the client-lib from the given options. By default it is `'ender-js'` but the `'client-lib'` property in the `options` object may override this value.
+### enderDependencyGraph.getBasePackageNames(options)
+`getBasePackageNames()` is a utility to return the list of base packages. By default it is `['ender-core', 'ender-commonjs']` but the `'client-lib'` and `'module-lib'` properties in the `options` object may override these values.
 
 -------------------------
 
